@@ -7,9 +7,10 @@ import pandas as pd
 from ashare_factor_lab import cli
 
 
-def test_parser_builds_all_subcommands():
+def test_parser_builds_all_subcommands(tmp_path):
     parser = cli.build_parser()
-    for command, extra in (("demo", []), ("eval", ["--data", "/tmp/none"]), ("leakage-check", [])):
+    fake = str(tmp_path / "none")          # 不写死 /tmp：Windows 上跑不起来
+    for command, extra in (("demo", []), ("eval", ["--data", fake]), ("leakage-check", [])):
         args = parser.parse_args([command, *extra])
         assert callable(args.func)
 
@@ -49,7 +50,7 @@ def test_demo_writes_report_and_daily_csv(tmp_path, capsys):
 
 def test_eval_errors_on_missing_directory(capsys):
     try:
-        cli.main(["eval", "--data", "/tmp/definitely-not-here-12345"])
+        cli.main(["eval", "--data", "/definitely-not-here-12345"])
     except SystemExit as exc:
         assert exc.code == 2
     else:                                     # pragma: no cover - 防御性分支
@@ -82,14 +83,14 @@ def test_eval_reads_a_real_directory(tmp_path):
     )
     assert code == 0
 
-def test_too_small_demo_fails_with_actionable_message(capsys):
+def test_too_small_demo_fails_with_actionable_message(tmp_path, capsys):
     """参数小到出不了折时，必须给出「该调哪个旋钮」而不是一条异常栈。
 
     CI 里就是这样挂过一次：demo 用了 60 只 × 900 天，单日股票数不够，
     抛 RuntimeError 直接把 workflow 打红，看日志只能看到 traceback。
     """
     code = cli.main(["demo", "--stocks", "60", "--days", "900", "--simulations", "5",
-                     "--out", "/tmp/should_not_exist.md", "--quiet"])
+                     "--out", str(tmp_path / "should_not_exist.md"), "--quiet"])
     assert code == 2
     err = capsys.readouterr().err
     assert "无法完成评估" in err
