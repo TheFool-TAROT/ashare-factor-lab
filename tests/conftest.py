@@ -29,7 +29,7 @@ def synthetic_cost_panel() -> pd.DataFrame:
     return df
 
 
-def toy_panel(rows: list[dict]) -> pd.DataFrame:
+def _toy_panel(rows: list[dict]) -> pd.DataFrame:
     """手工构造的小面板，用于断言具体的标签数值。"""
     frame = pd.DataFrame(rows)
     frame["code"] = frame["code"].astype(str)
@@ -45,5 +45,17 @@ def toy_panel(rows: list[dict]) -> pd.DataFrame:
     return normalize_panel(frame)
 
 
-def labeled(panel: pd.DataFrame, cfg: PanelConfig) -> pd.DataFrame:
+def _labeled(panel: pd.DataFrame, cfg: PanelConfig) -> pd.DataFrame:
     return build_labeled_panel(panel, cfg)
+
+
+# 以 fixture 形式暴露辅助函数：测试里写成函数参数即可，不需要 `from tests.conftest import ...`
+# —— 后者在 CI 上会因为 rootdir 不在 sys.path 而 ImportError（踩过一次）。
+@pytest.fixture
+def toy_panel():
+    return _toy_panel
+
+
+@pytest.fixture
+def labeled():
+    return _labeled

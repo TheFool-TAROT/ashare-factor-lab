@@ -6,10 +6,9 @@ import pandas as pd
 
 from ashare_factor_lab.labels import tradability_report
 from ashare_factor_lab.panel import PanelConfig
-from tests.conftest import labeled, toy_panel
 
 
-def _five_days(opens, closes, code="600000", dates=("2024-01-02", "2024-01-03", "2024-01-04", "2024-01-05", "2024-01-08")):
+def _five_days(toy_panel, opens, closes, code="600000", dates=("2024-01-02", "2024-01-03", "2024-01-04", "2024-01-05", "2024-01-08")):
     return toy_panel(
         [
             {"code": code, "date": d, "open": o, "close": c}
@@ -18,8 +17,8 @@ def _five_days(opens, closes, code="600000", dates=("2024-01-02", "2024-01-03", 
     )
 
 
-def test_label_is_t1_open_to_t2_open(panel_cfg):
-    panel = _five_days([10.0, 11.0, 13.0, 14.0, 15.0], [10.5, 11.5, 12.5, 14.5, 15.5])
+def test_label_is_t1_open_to_t2_open(toy_panel, labeled, panel_cfg):
+    panel = _five_days(toy_panel, [10.0, 11.0, 13.0, 14.0, 15.0], [10.5, 11.5, 12.5, 14.5, 15.5])
     out = labeled(panel, PanelConfig(liquidity_min=0, min_list_days=0))
     row = out[out["date"] == "2024-01-02"].iloc[0]
 
@@ -32,7 +31,7 @@ def test_label_is_t1_open_to_t2_open(panel_cfg):
     assert pd.isna(last["fwd_ret"])          # 样本末尾没有未来行情
 
 
-def test_suspension_makes_label_unavailable(panel_cfg):
+def test_suspension_makes_label_unavailable(toy_panel, labeled, panel_cfg):
     """中途停牌：下一行不是"下一个交易日"，因此 t+1 开盘买入不可执行。"""
     rows = [
         {"code": "600000", "date": "2024-01-02", "open": 10.0, "close": 10.1},
@@ -58,9 +57,9 @@ def test_suspension_makes_label_unavailable(panel_cfg):
     assert not bool(row["tradable"])
 
 
-def test_cannot_buy_when_t1_opens_at_limit_up(panel_cfg):
+def test_cannot_buy_when_t1_opens_at_limit_up(toy_panel, labeled, panel_cfg):
     """t+1 开盘直接涨停（= 昨收 ×1.1，四舍五入到分）→ 买不进。"""
-    panel = _five_days([10.0, 11.0, 11.5, 11.8, 12.0], [10.0, 11.0, 11.4, 11.9, 12.1])
+    panel = _five_days(toy_panel, [10.0, 11.0, 11.5, 11.8, 12.0], [10.0, 11.0, 11.4, 11.9, 12.1])
     out = labeled(panel, PanelConfig(liquidity_min=0, min_list_days=0))
     row = out[out["date"] == "2024-01-02"].iloc[0]
 
@@ -69,7 +68,7 @@ def test_cannot_buy_when_t1_opens_at_limit_up(panel_cfg):
     assert not bool(row["tradable"])
 
 
-def test_cannot_sell_when_t2_opens_at_limit_down(panel_cfg):
+def test_cannot_sell_when_t2_opens_at_limit_down(toy_panel, labeled, panel_cfg):
     """t+2 开盘跌停（= t+1 收盘 ×0.9）→ T+1 卖不出。"""
     panel = toy_panel(
         [
@@ -87,9 +86,9 @@ def test_cannot_sell_when_t2_opens_at_limit_down(panel_cfg):
     assert not bool(row["tradable"])
 
 
-def test_boards_have_different_limits(panel_cfg):
-    main = _five_days([10.0, 10.2, 10.3, 10.4, 10.5], [10.1, 10.2, 10.3, 10.4, 10.5], code="600000")
-    growth = _five_days([10.0, 10.2, 10.3, 10.4, 10.5], [10.1, 10.2, 10.3, 10.4, 10.5], code="300001")
+def test_boards_have_different_limits(toy_panel, labeled, panel_cfg):
+    main = _five_days(toy_panel, [10.0, 10.2, 10.3, 10.4, 10.5], [10.1, 10.2, 10.3, 10.4, 10.5], code="600000")
+    growth = _five_days(toy_panel, [10.0, 10.2, 10.3, 10.4, 10.5], [10.1, 10.2, 10.3, 10.4, 10.5], code="300001")
     cfg = PanelConfig(liquidity_min=0, min_list_days=0)
     a = labeled(main, cfg).iloc[0]
     b = labeled(growth, cfg).iloc[0]
@@ -97,17 +96,17 @@ def test_boards_have_different_limits(panel_cfg):
     assert b["limit_pct"] == 0.20
 
 
-def test_liquidity_filter_is_conservative_when_history_is_short(panel_cfg):
+def test_liquidity_filter_is_conservative_when_history_is_short(toy_panel, labeled, panel_cfg):
     """20 日均额算不出来（历史不足）时必须保守判为不可交易 —— 而不是当成"流动性无限好"。"""
-    panel = _five_days([10.0, 10.2, 10.3, 10.4, 10.5], [10.1, 10.2, 10.3, 10.4, 10.5])
+    panel = _five_days(toy_panel, [10.0, 10.2, 10.3, 10.4, 10.5], [10.1, 10.2, 10.3, 10.4, 10.5])
     out = labeled(panel, PanelConfig(liquidity_min=0.0, min_list_days=0))
     assert out["amtr20"].isna().all()
     assert not bool(out["liq_ok"].any())
     assert not bool(out["tradable"].any())
 
 
-def test_listing_days_filter_uses_config_threshold(panel_cfg):
-    panel = _five_days([10.0, 10.2, 10.3, 10.4, 10.5], [10.1, 10.2, 10.3, 10.4, 10.5])
+def test_listing_days_filter_uses_config_threshold(toy_panel, labeled, panel_cfg):
+    panel = _five_days(toy_panel, [10.0, 10.2, 10.3, 10.4, 10.5], [10.1, 10.2, 10.3, 10.4, 10.5])
     strict = labeled(panel, PanelConfig(liquidity_min=1e12, min_list_days=10_000))
     assert not bool(strict["liq_ok"].any())
     assert not bool(strict["mature"].any())
@@ -118,13 +117,13 @@ def test_listing_days_filter_uses_config_threshold(panel_cfg):
     assert not bool(relaxed["tradable"].any())    # 但流动性这一条仍然拦住
 
 
-def test_tradable_rows_exist_on_a_long_panel(panel_cfg, synthetic_panel):
+def test_tradable_rows_exist_on_a_long_panel(panel_cfg, synthetic_panel, labeled):
     out = labeled(synthetic_panel, panel_cfg)
     assert bool(out["tradable"].any())
     assert 0 < int(out["tradable"].sum()) < len(out)   # 过滤确实在起作用，不是全通也不是全拦
 
 
-def test_tradability_report_counts_lines(panel_cfg, synthetic_panel):
+def test_tradability_report_counts_lines(panel_cfg, synthetic_panel, labeled):
 
     out = labeled(synthetic_panel, panel_cfg)
     report = tradability_report(out)
