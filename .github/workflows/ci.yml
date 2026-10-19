@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: 静态检查
+        run: ruff check .
+
+      - name: 测试 + 覆盖率门槛
+        run: pytest --cov=ashare_factor_lab --cov-report=term-missing --cov-fail-under=85
+
+      - name: 因果性自检（无未来函数）
+        run: python -m ashare_factor_lab.cli leakage-check
+
+      - name: 端到端 demo（证明仓库永远可运行）
+        run: |
+          python -m ashare_factor_lab.cli demo --stocks 60 --days 900 --simulations 20 \
+            --out output/ci_report.md --quiet
+          test -s output/ci_report.md
+          grep -q "## 1. 结论" output/ci_report.md
+
+      - name: 上传 demo 报告
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-report-py${{ matrix.python-version }}
+          path: output/ci_report.md

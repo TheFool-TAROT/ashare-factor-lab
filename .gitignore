@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# 工具缓存
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# 产物（docs/demo_report.md 是签入的样例报告，不忽略）
+output/
+!docs/demo_report.md
+
+# 数据：行情数据不入库（体积与授权原因），用 `make demo` 的合成数据替代
+data/
+*.parquet
+*.feather
+
+# 凭据：任何密钥、token、.env 一律不入库
+.env
+.env.*
+*.pem
+*.key
+credentials*.json
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+.DS_Store
