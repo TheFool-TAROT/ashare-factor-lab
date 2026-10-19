@@ -28,7 +28,7 @@
 > **A 股日频横截面因子评估框架** · Python / scikit-learn / Pandas / pytest / GitHub Actions
 >
 > - 独立完成从数据到结论的完整流水线：30 个截面因子、GBDT 打分、750/60/60 滚动 walk-forward（含 2 日 embargo 防标签泄漏）、T+1 可执行标签（t+1 开盘买 / t+2 开盘卖）。
-> - **把"无未来函数"变成可自动检验的对象**：实现扰动测试——篡改 t 日之后的全部行情后重算，断言第 t 行特征逐列不变；并用 AST 静态检查禁止 `shift(-n)`、`rolling(center=True)` 出现在特征代码里。58 个测试、94% 覆盖率、CI 全绿。
+> - **把"无未来函数"变成可自动检验的对象**：实现扰动测试——篡改 t 日之后的全部行情后重算，断言第 t 行特征逐列不变；并用 AST 静态检查禁止 `shift(-n)`、`rolling(center=True)` 出现在特征代码里。59 个测试、95% 覆盖率、CI 全绿。
 > - **量化了生存偏差与成本这两个最容易骗自己的环节**：只保留当前成分股时 RankIC 3.25%，纳入 198 只样本期内退市股后降到 1.36%（-58%）；日频换手 68% × 每次 0.2~0.5% 成本 = 0.14~0.34%/日，而毛超额仅 0.094%/日，5/10/20bp 三档滑点假设下年化净超额分别为 −10.4% / −24.5% / −46.4%，**据此判定策略不成立并放弃**。
 > - **对自有实现做独立代码审计，修复 11 个缺陷**（含"用行号冒充上市天数导致 22% 样本被误剔且结论随数据切片漂移"、"用未来可得性筛样本"、"持有期实验卖出侧从未校验跌停"），并把每一条都固化成回归测试。
 
@@ -47,7 +47,7 @@
 **Full**
 
 > - Built the full pipeline end to end: 30 cross-sectional features, GBDT scoring, 750/60/60 walk-forward splits with a 2-day embargo against label leakage, and T+1 executable labels (buy at `t+1` open, sell at `t+2` open).
-> - **Turned "no look-ahead bias" into an automated check**: a perturbation test rewrites every price after day `t` and asserts day `t`'s features are bit-identical, and an AST check forbids `shift(-n)` / `rolling(center=True)` in feature code. 58 tests, 94% coverage, green CI.
+> - **Turned "no look-ahead bias" into an automated check**: a perturbation test rewrites every price after day `t` and asserts day `t`'s features are bit-identical, and an AST check forbids `shift(-n)` / `rolling(center=True)` in feature code. 59 tests, 95% coverage, green CI.
 > - **Quantified survivorship bias and trading costs**: restricting the universe to current index members gives RankIC 3.25%; adding 198 names delisted inside the window drops it to 1.36% (−58%). 68% daily turnover at 0.2–0.5% per turnover costs 0.14–0.34%/day against 0.094%/day gross alpha, giving −10.4% / −24.5% / −46.4% annualised net excess at 5/10/20bp half-spreads — **conclusion: the strategy does not work, so I killed it.**
 > - **Audited my own earlier implementation and fixed 11 defects**, including "row index masquerading as listing age" (which silently dropped 22% of the sample and made conclusions drift with the data slice), "screening samples by future availability", and "exit-day limit-down never validated in holding-period experiments" — each one is now a regression test.
 
@@ -122,6 +122,6 @@
 ## 六、投递建议
 
 - **量化研究员/因子方向**：完整版 bullet 全用，把"生存偏差 3.25%→1.36%"和"11 个缺陷审计"放前面，这两条最能证明你会怀疑自己。
-- **数据/后端方向**：把第 2 条（扰动测试 + AST 静态检查 + 58 测试 94% 覆盖 + CI）放前面，第 3 条缩成一句成本结论。
+- **数据/后端方向**：把第 2 条（扰动测试 + AST 静态检查 + 59 测试 95% 覆盖 + CI）放前面，第 3 条缩成一句成本结论。
 - **和短链项目组合**：两个项目一起讲一句——"一个练在被测量约束下把系统推到极限，一个练在指标不明确时先把指标定对"，然后各给一条最硬的证据（短链给 QPS/P99 与优化前后对比，本项目给生存偏差量化与负结论）。
 - 附链接时直接给仓库地址 + `docs/demo_report.md`，让对方 30 秒能看到结论表和成本敏感性表。

@@ -3,8 +3,8 @@
 **一次诚实的负结果，加上把"最容易骗自己"的三个环节做成自动化检验的工程实现。**
 
 [![CI](https://github.com/TheFool-TAROT/ashare-factor-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/TheFool-TAROT/ashare-factor-lab/actions/workflows/ci.yml)
-![tests](https://img.shields.io/badge/tests-58%20passed-brightgreen)
-![coverage](https://img.shields.io/badge/coverage-94%25-brightgreen)
+![tests](https://img.shields.io/badge/tests-59%20passed-brightgreen)
+![coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-blue)
 
@@ -28,7 +28,7 @@
 git clone https://github.com/TheFool-TAROT/ashare-factor-lab && cd ashare-factor-lab
 pip install -e ".[dev]"
 make demo          # 合成数据跑完整流水线，约 3 分钟，输出 docs/demo_report.md 同款报告
-make test          # 58 个测试，含"篡改未来数据、断言历史特征不变"的因果性测试
+make test          # 59 个测试，含"篡改未来数据、断言历史特征不变"的因果性测试
 ```
 
 ---
@@ -130,7 +130,7 @@ demo 用**人为植入的弱反向动量信号**（信噪比可调）验证流�
 | 6 | 报表候选清单过滤 3 项，回测过滤 6 项 | 报表里"剩 N 只"包含了根本买不进的票 | 全仓库唯一的 `tradable` 定义，报表与回测同源 |
 | 7 | K>1 持有期实验的卖出侧仍只校验 t+2 | K=20 时**卖出日的跌停从未被校验**，净收益偏乐观 | `holding_days=h` 参数把跌停校验落在真正的卖出日 t+1+h；embargo 要求同步变成 h+1 |
 | 8 | "t 值 1.5~2.0"硬编码在 6 个文件的文案里 | 数字与代码解耦，改了一处忘了另一处 | 所有指标只有一处产出（`metrics.py` + `pipeline.py`），报告由 `report.py` 生成，不存在手抄数字 |
-| 9 | 无依赖锁定 / 无 CI / 无测试 / 69 处硬编码绝对路径 / 模块 import 即写盘 | 换台机器就跑不起来；无法证明任何数字 | `pyproject.toml` + GitHub Actions + 58 测试 94% 覆盖 + 零绝对路径 + 无模块级副作用（`import` 不碰文件系统） |
+| 9 | 无依赖锁定 / 无 CI / 无测试 / 69 处硬编码绝对路径 / 模块 import 即写盘 | 换台机器就跑不起来；无法证明任何数字 | `pyproject.toml` + GitHub Actions + 59 测试 95% 覆盖 + 零绝对路径 + 无模块级副作用（`import` 不碰文件系统） |
 | 10 | `has_t1/has_t2` 只判"存在下一行" | 跨停牌的样本被当成可交易（约占 0.07%），方向上是高估可交易性 | 按市场交易日历严格判定；测试里专门构造停牌股，并记录"单只股票的日期集合不构成交易日历"这个坑 |
 | 11 | 特征工程有三份重复实现，且自检只比部分列，换不住漂移 | 训练口径与线上打分的口径会慢慢分叉 | 唯一的 `build_labeled_panel()` 入口；AST 级静态检查禁止 labels.py 之外出现 `shift(-n)` 与 `rolling(center=True)` |
 
@@ -153,7 +153,7 @@ ashare-factor-lab/
 │   ├── pipeline.py    端到端流水线（cli 与测试共用同一段代码）
 │   ├── report.py      Markdown 报告渲染
 │   └── cli.py         afl demo / eval / leakage-check
-├── tests/             58 个测试，94% 覆盖率（因果性 4 · 标签 9 · 切分与指标 13 · 成本与回测 12 · 宇宙与基准 9 · 端到端 6 · CLI 5）
+├── tests/             59 个测试，95% 覆盖率（因果性 4 · 标签 9 · 切分与指标 13 · 成本与回测 12 · 宇宙与基准 9 · 端到端 6 · CLI 5+1）
 ├── docs/demo_report.md   签入的样例报告（评审者不用跑就能看结论）
 ├── Makefile           make demo / test / cov / lint / leakage / report
 └── .github/workflows/ci.yml
