@@ -49,17 +49,33 @@ def _real_panel(args) -> tuple:
 def _run(args, panel, split, note: str) -> int:
     panel_cfg = PanelConfig(liquidity_min=args.liquidity_min, min_list_days=args.min_list_days)
     eval_cfg = EvalConfig(top_quantile=args.top_quantile, min_stocks_per_day=args.min_stocks)
-    result = run_study(
-        panel,
-        split_cfg=split,
-        eval_cfg=eval_cfg,
-        panel_cfg=panel_cfg,
-        holding_days=args.holding_days,
-        cost_model=CostModel(half_spread=args.half_spread / 1e4),
-        n_random_simulations=args.simulations,
-        n_trials=args.trials,
-        verbose=not args.quiet,
-    )
+    try:
+        result = run_study(
+            panel,
+            split_cfg=split,
+            eval_cfg=eval_cfg,
+            panel_cfg=panel_cfg,
+            holding_days=args.holding_days,
+            cost_model=CostModel(half_spread=args.half_spread / 1e4),
+            n_random_simulations=args.simulations,
+            n_trials=args.trials,
+            verbose=not args.quiet,
+        )
+    except RuntimeError as exc:
+        # 参数配得不够大（股票数 / 样本期 / 单日最少股票数）时，直接把"该调哪个旋钮"说清楚，
+        # 而不是把一条异常栈丢给使用者 —— 包括 CI。
+        n_days = panel["date"].nunique()
+        per_day = panel.groupby("date")["code"].nunique()
+        print(f"\n无法完成评估：{exc}\n", file=sys.stderr)
+        print("当前数据与参数：", file=sys.stderr)
+        print(f"  股票数 {panel['code'].nunique()}   交易日 {n_days}   "
+              f"单日股票数 中位数 {per_day.median():.0f} / 最少 {per_day.min()}", file=sys.stderr)
+        print(f"  折设置 训练 {split.train_days} + 测试 {split.test_days}（需要 {split.train_days + split.test_days} 个交易日以上）",
+              file=sys.stderr)
+        print(f"  单日最少股票数阈值 --min-stocks {args.min_stocks}", file=sys.stderr)
+        print("\n可尝试：加大 --stocks / --days，或降低 --min-stocks、--min-list-days、--liquidity-min。",
+              file=sys.stderr)
+        return 2
     # 让 PanelConfig 进入 meta，报告里能显示过滤阈值
     result.meta["panel"] = panel_cfg.__dict__.copy()
 

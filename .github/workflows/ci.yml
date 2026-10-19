@@ -38,7 +38,9 @@ jobs:
 
       - name: 端到端 demo（证明仓库永远可运行）
         run: |
-          python -m ashare_factor_lab.cli demo --stocks 60 --days 900 --simulations 20 \
+          # 参数必须足够大才产生有效折（60 只 × 900 天会因"单日股票数不足"而拒绝出报告），
+          # 100 只 × 1000 天实测 33 秒 —— 兼顾"跑得动"与"真的跑到结论"
+          python -m ashare_factor_lab.cli demo --stocks 100 --days 1000 --simulations 20 \
             --out output/ci_report.md --quiet
           test -s output/ci_report.md
           grep -q "## 1. 结论" output/ci_report.md

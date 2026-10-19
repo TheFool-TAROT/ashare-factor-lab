@@ -81,3 +81,17 @@ def test_eval_reads_a_real_directory(tmp_path):
         ]
     )
     assert code == 0
+
+def test_too_small_demo_fails_with_actionable_message(capsys):
+    """参数小到出不了折时，必须给出「该调哪个旋钮」而不是一条异常栈。
+
+    CI 里就是这样挂过一次：demo 用了 60 只 × 900 天，单日股票数不够，
+    抛 RuntimeError 直接把 workflow 打红，看日志只能看到 traceback。
+    """
+    code = cli.main(["demo", "--stocks", "60", "--days", "900", "--simulations", "5",
+                     "--out", "/tmp/should_not_exist.md", "--quiet"])
+    assert code == 2
+    err = capsys.readouterr().err
+    assert "无法完成评估" in err
+    assert "--min-stocks" in err and "--stocks" in err
+    assert "股票数 60" in err
